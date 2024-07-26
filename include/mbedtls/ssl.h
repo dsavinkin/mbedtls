@@ -344,6 +344,14 @@
 /** \} name SECTION: Module settings */
 
 /*
+ * Default to standard CID mode
+ */
+#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID) && \
+    !defined(MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT)
+#define MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT 0
+#endif
+
+/*
  * Length of the verify data for secure renegotiation
  */
 #if defined(MBEDTLS_SSL_PROTO_SSL3)
@@ -467,8 +475,10 @@
  * A future minor revision of Mbed TLS may change the default value of
  * this option to match evolving standards and usage.
  */
-#if !defined(MBEDTLS_TLS_EXT_CID)
-#define MBEDTLS_TLS_EXT_CID                        254 /* TBD */
+#if MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT == 0
+#define MBEDTLS_TLS_EXT_CID                         54 /* RFC 9146 DTLS 1.2 CID */
+#else
+#define MBEDTLS_TLS_EXT_CID                        254 /* Pre-RFC 9146 DTLS 1.2 CID */
 #endif
 
 #define MBEDTLS_TLS_EXT_ECJPAKE_KKPP               256 /* experimental */
@@ -1707,8 +1717,9 @@ void mbedtls_ssl_set_bio(mbedtls_ssl_context *ssl,
  * \brief             Configure the use of the Connection ID (CID)
  *                    extension in the next handshake.
  *
- *                    Reference: draft-ietf-tls-dtls-connection-id-05
+ *                    Reference: RFC 9146 (or draft-ietf-tls-dtls-connection-id-05
  *                    https://tools.ietf.org/html/draft-ietf-tls-dtls-connection-id-05
+ *                    for legacy version)
  *
  *                    The DTLS CID extension allows the reliable association of
  *                    DTLS records to DTLS connections across changes in the
@@ -1765,7 +1776,7 @@ void mbedtls_ssl_set_bio(mbedtls_ssl_context *ssl,
  *                      the `ServerHello` contains the CID extension, too,
  *                      the CID extension will actually be put to use.
  *                    - On the Server, enabling the use of the CID through
- *                      this call implies that that the server will look for
+ *                      this call implies that the server will look for
  *                      the CID extension in a `ClientHello` from the client,
  *                      and, if present, reply with a CID extension in its
  *                      `ServerHello`.
@@ -1790,6 +1801,40 @@ int mbedtls_ssl_set_cid(mbedtls_ssl_context *ssl,
                         int enable,
                         unsigned char const *own_cid,
                         size_t own_cid_len);
+
+/**
+ * \brief              Get information about our request for usage of the CID
+ *                     extension in the current connection.
+ *
+ * \param ssl          The SSL context to query.
+ * \param enabled      The address at which to store whether the CID extension
+ *                     is requested to be used or not. If the CID is
+ *                     requested, `*enabled` is set to
+ *                     MBEDTLS_SSL_CID_ENABLED; otherwise, it is set to
+ *                     MBEDTLS_SSL_CID_DISABLED.
+ * \param own_cid      The address of the buffer in which to store our own
+ *                     CID (if the CID extension is requested). This may be
+ *                     \c NULL in case the value of our CID isn't needed. If
+ *                     it is not \c NULL, \p own_cid_len must not be \c NULL.
+ * \param own_cid_len  The address at which to store the size of our own CID
+ *                     (if the CID extension is requested). This is also the
+ *                     number of Bytes in \p own_cid that have been written.
+ *                     This may be \c NULL in case the length of our own CID
+ *                     isn't needed. If it is \c NULL, \p own_cid must be
+ *                     \c NULL, too.
+ *
+ *\note                If we are requesting an empty CID this function sets
+ *                     `*enabled` to #MBEDTLS_SSL_CID_DISABLED (the rationale
+ *                     for this is that the resulting outcome is the
+ *                     same as if the CID extensions wasn't requested).
+ *
+ * \return            \c 0 on success.
+ * \return            A negative error code on failure.
+ */
+int mbedtls_ssl_get_own_cid(mbedtls_ssl_context *ssl,
+                            int *enabled,
+                            unsigned char own_cid[MBEDTLS_SSL_CID_OUT_LEN_MAX],
+                            size_t *own_cid_len);
 
 /**
  * \brief              Get information about the use of the CID extension

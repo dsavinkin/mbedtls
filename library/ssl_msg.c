@@ -426,6 +426,11 @@ static void ssl_extract_add_data_from_record(unsigned char *add_data,
     unsigned char *cur = add_data;
 
     int is_tls13 = 0;
+
+#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID) && \
+    MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT == 0
+    const unsigned char seq_num_placeholder[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+#endif
 #if defined(MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL)
     if (minor_ver == MBEDTLS_SSL_MINOR_VERSION_4) {
         is_tls13 = 1;
@@ -433,24 +438,66 @@ static void ssl_extract_add_data_from_record(unsigned char *add_data,
 #endif /* MBEDTLS_SSL_PROTO_TLS1_3_EXPERIMENTAL */
     if (!is_tls13) {
         ((void) minor_ver);
-        memcpy(cur, rec->ctr, sizeof(rec->ctr));
-        cur += sizeof(rec->ctr);
+#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID) && \
+        MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT == 0
+        if (rec->cid_len != 0) {
+            // seq_num_placeholder
+            memcpy(cur, seq_num_placeholder, sizeof(seq_num_placeholder));
+            cur += sizeof(seq_num_placeholder);
+
+            // tls12_cid type
+            *cur = rec->type;
+            cur++;
+
+            // cid_length
+            *cur = rec->cid_len;
+            cur++;
+        } else
+#endif /* MBEDTLS_SSL_DTLS_CONNECTION_ID */
+        {
+            // epoch + sequence number
+            memcpy(cur, rec->ctr, sizeof(rec->ctr));
+            cur += sizeof(rec->ctr);
+        }
     }
 
+    // type
     *cur = rec->type;
     cur++;
 
+    // version
     memcpy(cur, rec->ver, sizeof(rec->ver));
     cur += sizeof(rec->ver);
 
-#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
+#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID) && \
+    MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT == 1
+
     if (rec->cid_len != 0) {
+        // CID
         memcpy(cur, rec->cid, rec->cid_len);
         cur += rec->cid_len;
 
+        // cid_length
         *cur = rec->cid_len;
         cur++;
 
+        // length of inner plaintext
+        MBEDTLS_PUT_UINT16_BE(rec->data_len, cur, 0);
+        cur += 2;
+    } else
+#elif defined(MBEDTLS_SSL_DTLS_CONNECTION_ID) && \
+    MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT == 0
+
+    if (rec->cid_len != 0) {
+        // epoch + sequence number
+        memcpy(cur, rec->ctr, sizeof(rec->ctr));
+        cur += sizeof(rec->ctr);
+
+        // CID
+        memcpy(cur, rec->cid, rec->cid_len);
+        cur += rec->cid_len;
+
+        // length of inner plaintext
         MBEDTLS_PUT_UINT16_BE(rec->data_len, cur, 0);
         cur += 2;
     } else
@@ -609,7 +656,14 @@ int mbedtls_ssl_encrypt_buf(mbedtls_ssl_context *ssl,
     mbedtls_cipher_mode_t mode;
     int auth_done = 0;
     unsigned char *data;
-    unsigned char add_data[13 + 1 + MBEDTLS_SSL_CID_OUT_LEN_MAX];
+    /* For an explanation of the additional data length see
+     * the description of ssl_extract_add_data_from_record().
+     */
+#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
+    unsigned char add_data[23 + MBEDTLS_SSL_CID_OUT_LEN_MAX];
+#else
+    unsigned char add_data[13];
+#endif
     size_t add_data_len;
     size_t post_avail;
 
@@ -1105,7 +1159,14 @@ int mbedtls_ssl_decrypt_buf(mbedtls_ssl_context const *ssl,
     size_t padlen = 0, correct = 1;
 #endif
     unsigned char *data;
-    unsigned char add_data[13 + 1 + MBEDTLS_SSL_CID_IN_LEN_MAX];
+    /* For an explanation of the additional data length see
+     * the description of ssl_extract_add_data_from_record().
+     */
+#if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
+    unsigned char add_data[23 + MBEDTLS_SSL_CID_IN_LEN_MAX];
+#else
+    unsigned char add_data[13];
+#endif
     size_t add_data_len;
 
 #if !defined(MBEDTLS_DEBUG_C)
