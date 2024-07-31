@@ -1954,7 +1954,7 @@ read_record_header:
                     return ret;
                 }
                 break;
-#endif /* MBEDTLS_SSL_TRUNCATED_HMAC */
+#endif /* MBEDTLS_SSL_DTLS_CONNECTION_ID */
 
 #if defined(MBEDTLS_SSL_ENCRYPT_THEN_MAC)
             case MBEDTLS_TLS_EXT_ENCRYPT_THEN_MAC:
@@ -2264,9 +2264,6 @@ static void ssl_write_cid_ext(mbedtls_ssl_context *ssl,
     MBEDTLS_SSL_DEBUG_MSG(3, ("server hello, adding CID extension"));
 
     /*
-     * Quoting draft-ietf-tls-dtls-connection-id-05
-     * https://tools.ietf.org/html/draft-ietf-tls-dtls-connection-id-05
-     *
      *   struct {
      *      opaque cid<0..2^8-1>;
      *   } ConnectionId;
