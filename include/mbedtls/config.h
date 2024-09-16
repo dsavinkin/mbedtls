@@ -715,28 +715,28 @@
  *
  * Enable Cipher Feedback mode (CFB) for symmetric ciphers.
  */
-#define MBEDTLS_CIPHER_MODE_CFB
+//#define MBEDTLS_CIPHER_MODE_CFB
 
 /**
  * \def MBEDTLS_CIPHER_MODE_CTR
  *
  * Enable Counter Block Cipher mode (CTR) for symmetric ciphers.
  */
-#define MBEDTLS_CIPHER_MODE_CTR
+//#define MBEDTLS_CIPHER_MODE_CTR
 
 /**
  * \def MBEDTLS_CIPHER_MODE_OFB
  *
  * Enable Output Feedback mode (OFB) for symmetric ciphers.
  */
-#define MBEDTLS_CIPHER_MODE_OFB
+//#define MBEDTLS_CIPHER_MODE_OFB
 
 /**
  * \def MBEDTLS_CIPHER_MODE_XTS
  *
  * Enable Xor-encrypt-xor with ciphertext stealing mode (XTS) for AES.
  */
-#define MBEDTLS_CIPHER_MODE_XTS
+//#define MBEDTLS_CIPHER_MODE_XTS
 
 /**
  * \def MBEDTLS_CIPHER_NULL_CIPHER
@@ -782,10 +782,10 @@
  *
  * Enable padding modes in the cipher layer.
  */
-#define MBEDTLS_CIPHER_PADDING_PKCS7
-#define MBEDTLS_CIPHER_PADDING_ONE_AND_ZEROS
-#define MBEDTLS_CIPHER_PADDING_ZEROS_AND_LEN
-#define MBEDTLS_CIPHER_PADDING_ZEROS
+//#define MBEDTLS_CIPHER_PADDING_PKCS7
+//#define MBEDTLS_CIPHER_PADDING_ONE_AND_ZEROS
+//#define MBEDTLS_CIPHER_PADDING_ZEROS_AND_LEN
+//#define MBEDTLS_CIPHER_PADDING_ZEROS
 
 /** \def MBEDTLS_CTR_DRBG_USE_128_BIT_KEY
  *
@@ -823,7 +823,7 @@
  *
  * Uncomment this macro to remove RC4 ciphersuites by default.
  */
-#define MBEDTLS_REMOVE_ARC4_CIPHERSUITES
+//#define MBEDTLS_REMOVE_ARC4_CIPHERSUITES
 
 /**
  * \def MBEDTLS_REMOVE_3DES_CIPHERSUITES
@@ -843,7 +843,7 @@
  *
  * Comment this macro to keep 3DES in the default ciphersuite list.
  */
-#define MBEDTLS_REMOVE_3DES_CIPHERSUITES
+//#define MBEDTLS_REMOVE_3DES_CIPHERSUITES
 
 /**
  * Enable the verified implementations of ECDH primitives from Project Everest
@@ -870,13 +870,13 @@
 #define MBEDTLS_ECP_DP_SECP224R1_ENABLED
 #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 #define MBEDTLS_ECP_DP_SECP384R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP521R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP192K1_ENABLED
-#define MBEDTLS_ECP_DP_SECP224K1_ENABLED
+//#define MBEDTLS_ECP_DP_SECP521R1_ENABLED
+//#define MBEDTLS_ECP_DP_SECP192K1_ENABLED
+//#define MBEDTLS_ECP_DP_SECP224K1_ENABLED
 #define MBEDTLS_ECP_DP_SECP256K1_ENABLED
 #define MBEDTLS_ECP_DP_BP256R1_ENABLED
-#define MBEDTLS_ECP_DP_BP384R1_ENABLED
-#define MBEDTLS_ECP_DP_BP512R1_ENABLED
+//#define MBEDTLS_ECP_DP_BP384R1_ENABLED
+//#define MBEDTLS_ECP_DP_BP512R1_ENABLED
 /* Montgomery curves (supporting ECP) */
 #define MBEDTLS_ECP_DP_CURVE25519_ENABLED
 #define MBEDTLS_ECP_DP_CURVE448_ENABLED
@@ -1797,7 +1797,7 @@
  *
  * Comment this macro to disable support for Encrypt-then-MAC
  */
-#define MBEDTLS_SSL_ENCRYPT_THEN_MAC
+//#define MBEDTLS_SSL_ENCRYPT_THEN_MAC
 
 /** \def MBEDTLS_SSL_EXTENDED_MASTER_SECRET
  *
@@ -1815,7 +1815,7 @@
  *
  * Comment this macro to disable support for Extended Master Secret.
  */
-#define MBEDTLS_SSL_EXTENDED_MASTER_SECRET
+//#define MBEDTLS_SSL_EXTENDED_MASTER_SECRET
 
 /**
  * \def MBEDTLS_SSL_FALLBACK_SCSV
@@ -1880,7 +1880,7 @@
  *
  * Comment this macro to disable 1/n-1 record splitting.
  */
-#define MBEDTLS_SSL_CBC_RECORD_SPLITTING
+//#define MBEDTLS_SSL_CBC_RECORD_SPLITTING
 
 /**
  * \def MBEDTLS_SSL_RENEGOTIATION
@@ -2108,7 +2108,7 @@
  *
  * Comment this to disable support for clients reusing the source port.
  */
-#define MBEDTLS_SSL_DTLS_CLIENT_PORT_REUSE
+//#define MBEDTLS_SSL_DTLS_CLIENT_PORT_REUSE
 
 /**
  * \def MBEDTLS_SSL_DTLS_BADMAC_LIMIT
@@ -2133,7 +2133,7 @@
  *
  * Comment this macro to disable support for SSL session tickets
  */
-#define MBEDTLS_SSL_SESSION_TICKETS
+//#define MBEDTLS_SSL_SESSION_TICKETS
 
 /**
  * \def MBEDTLS_SSL_EXPORT_KEYS
@@ -2824,7 +2824,7 @@
  *
  * This module requires: MBEDTLS_CHACHA20_C, MBEDTLS_POLY1305_C
  */
-#define MBEDTLS_CHACHAPOLY_C
+//#define MBEDTLS_CHACHAPOLY_C
 
 /**
  * \def MBEDTLS_CIPHER_C

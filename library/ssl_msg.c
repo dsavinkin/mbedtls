@@ -966,6 +966,8 @@ hmac_failed_etm_disabled:
         /*
          * Prefix record content with dynamic IV in case it is explicit.
          */
+        MBEDTLS_SSL_DEBUG_MSG(3, ("dynamic_iv_is_explicit=%d, rec->data_offset=%" MBEDTLS_PRINTF_SIZET ", dynamic_iv_len=%" MBEDTLS_PRINTF_SIZET,
+                                  dynamic_iv_is_explicit, rec->data_offset, dynamic_iv_len));
         if (dynamic_iv_is_explicit != 0) {
             if (rec->data_offset < dynamic_iv_len) {
                 MBEDTLS_SSL_DEBUG_MSG(1, ("Buffer provided for encrypted record not large enough"));
@@ -2698,16 +2700,27 @@ int mbedtls_ssl_write_record(mbedtls_ssl_context *ssl, uint8_t force_flush)
         mbedtls_ssl_write_version(ssl->major_ver, ssl->minor_ver,
                                   ssl->conf->transport, ssl->out_hdr + 1);
 
+        MBEDTLS_SSL_DEBUG_BUF(4, "ssl->cur_out_ctr",
+                              ssl->cur_out_ctr, 8);
+
+        MBEDTLS_SSL_DEBUG_MSG(3, ("ssl->out_msg=%p, ssl->out_hdr=%p, ssl->out_iv=%p",
+                                  ssl->out_msg, ssl->out_hdr, ssl->out_iv));
+
         memcpy(ssl->out_ctr, ssl->cur_out_ctr, 8);
         MBEDTLS_PUT_UINT16_BE(len, ssl->out_len, 0);
 
         if (ssl->transform_out != NULL) {
             mbedtls_record rec;
 
+            MBEDTLS_SSL_DEBUG_MSG(3, ("minor_ver=%d, ivlen=%lu, fixed_ivlen=%lu",
+                                      ssl->minor_ver, ssl->transform_out->ivlen, ssl->transform_out->fixed_ivlen));
+
             rec.buf         = ssl->out_iv;
             rec.buf_len     = out_buf_len - (ssl->out_iv - ssl->out_buf);
             rec.data_len    = ssl->out_msglen;
             rec.data_offset = ssl->out_msg - rec.buf;
+
+            MBEDTLS_SSL_DEBUG_MSG(4, ("rec.data_offset=%lu", rec.data_offset));
 
             memcpy(&rec.ctr[0], ssl->out_ctr, 8);
             mbedtls_ssl_write_version(ssl->major_ver, ssl->minor_ver,
@@ -2724,6 +2737,8 @@ int mbedtls_ssl_write_record(mbedtls_ssl_context *ssl, uint8_t force_flush)
                 MBEDTLS_SSL_DEBUG_RET(1, "ssl_encrypt_buf", ret);
                 return ret;
             }
+
+            MBEDTLS_SSL_DEBUG_MSG(4, ("rec.data_offset=%lu", rec.data_offset));
 
             if (rec.data_offset != 0) {
                 MBEDTLS_SSL_DEBUG_MSG(1, ("should never happen"));
@@ -2772,11 +2787,16 @@ int mbedtls_ssl_write_record(mbedtls_ssl_context *ssl, uint8_t force_flush)
         ssl->out_hdr  += protected_record_size;
         mbedtls_ssl_update_out_pointers(ssl, ssl->transform_out);
 
+        MBEDTLS_SSL_DEBUG_BUF(4, "ssl->cur_out_ctr",
+                              ssl->cur_out_ctr, 8);
         for (i = 8; i > mbedtls_ssl_ep_len(ssl); i--) {
             if (++ssl->cur_out_ctr[i - 1] != 0) {
                 break;
             }
         }
+
+        MBEDTLS_SSL_DEBUG_BUF(4, "ssl->cur_out_ctr",
+                              ssl->cur_out_ctr, 8);
 
         /* The loop goes to its end iff the counter is wrapping */
         if (i == mbedtls_ssl_ep_len(ssl)) {
@@ -3703,6 +3723,7 @@ static int ssl_prepare_record_content(mbedtls_ssl_context *ssl,
 {
     int ret, done = 0;
 
+    MBEDTLS_SSL_DEBUG_MSG(3, ("rec->buf=%p", rec->buf));
     MBEDTLS_SSL_DEBUG_BUF(4, "input record from network",
                           rec->buf, rec->buf_len);
 
@@ -4522,6 +4543,7 @@ static int ssl_get_next_record(mbedtls_ssl_context *ssl)
         MBEDTLS_SSL_DEBUG_RET(1, "mbedtls_ssl_fetch_input", ret);
         return ret;
     }
+    MBEDTLS_SSL_DEBUG_RET(1, "mbedtls_ssl_fetch_input", ret);
 
     ret = ssl_parse_record_header(ssl, ssl->in_hdr, ssl->in_left, &rec);
     if (ret != 0) {
@@ -4680,6 +4702,8 @@ static int ssl_get_next_record(mbedtls_ssl_context *ssl)
      * record header when receiving a ClientHello initiating
      * a renegotiation. */
     ssl->in_hdr[0] = rec.type;
+    MBEDTLS_SSL_DEBUG_MSG(1, ("ssl->in_msg %p->%p, rec.buf=%p, rec.data_offset=%lu, ssl->in_len=%p, rec.data_len=%lu",
+                              ssl->in_msg, rec.buf + rec.data_offset, rec.buf, rec.data_offset, ssl->in_len, rec.data_len));
     ssl->in_msg    = rec.buf + rec.data_offset;
     ssl->in_msglen = rec.data_len;
     MBEDTLS_PUT_UINT16_BE(rec.data_len, ssl->in_len, 0);
@@ -4993,9 +5017,11 @@ void mbedtls_ssl_update_out_pointers(mbedtls_ssl_context *ssl,
         ssl->out_iv  = ssl->out_hdr + 5;
     }
 
+    MBEDTLS_SSL_DEBUG_MSG(1, ("ssl->out_msg %p->%p, transform=%p", ssl->out_msg, ssl->out_iv, transform));
     ssl->out_msg = ssl->out_iv;
     /* Adjust out_msg to make space for explicit IV, if used. */
     if (transform != NULL) {
+        MBEDTLS_SSL_DEBUG_MSG(1, ("ssl->out_msg %p->%p", ssl->out_msg, ssl->out_msg + ssl_transform_get_explicit_iv_len(transform)));
         ssl->out_msg += ssl_transform_get_explicit_iv_len(transform);
     }
 }
@@ -5031,6 +5057,7 @@ void mbedtls_ssl_update_in_pointers(mbedtls_ssl_context *ssl)
         ssl->in_cid = ssl->in_ctr +  8;
         ssl->in_len = ssl->in_cid; /* Default: no CID */
 #else /* MBEDTLS_SSL_DTLS_CONNECTION_ID */
+        MBEDTLS_SSL_DEBUG_MSG(1, ("ssl->in_len %p->%p", ssl->in_len, ssl->in_ctr + 8));
         ssl->in_len = ssl->in_ctr + 8;
 #endif /* MBEDTLS_SSL_DTLS_CONNECTION_ID */
         ssl->in_iv  = ssl->in_len + 2;
@@ -5038,6 +5065,7 @@ void mbedtls_ssl_update_in_pointers(mbedtls_ssl_context *ssl)
 #endif
     {
         ssl->in_ctr = ssl->in_hdr - 8;
+        MBEDTLS_SSL_DEBUG_MSG(1, ("ssl->in_len %p->%p", ssl->in_len, ssl->in_hdr + 3));
         ssl->in_len = ssl->in_hdr + 3;
 #if defined(MBEDTLS_SSL_DTLS_CONNECTION_ID)
         ssl->in_cid = ssl->in_len;
@@ -5046,6 +5074,7 @@ void mbedtls_ssl_update_in_pointers(mbedtls_ssl_context *ssl)
     }
 
     /* This will be adjusted at record decryption time. */
+    MBEDTLS_SSL_DEBUG_MSG(1, ("ssl->in_msg %p->%p", ssl->in_msg, ssl->in_iv));
     ssl->in_msg = ssl->in_iv;
 }
 
